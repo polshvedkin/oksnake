@@ -66,12 +66,14 @@
   <button id="ok-button">OK</button>
 
   <script>
+
     const okButton = document.getElementById('ok-button');
+    let ttime = 30000;
 
     okButton.addEventListener('click', function () {
       const confirmed = confirm('Are you sure?');
       if (confirmed) {
-        alert('You should click Ok first');
+        alert('You should click "OK" first');
         startSnakeGame();
       }
     });
@@ -83,10 +85,10 @@
 
       let x = 0;
       let y = 0;
-      const step = 5;
+      const step = 3;
 
       // Panic mode: OK button tries to escape for 2 seconds
-      const panicDuration = 2000;
+      const panicDuration = 1000;
       const panicInterval = 300;
       let panicStart = Date.now();
 
@@ -105,9 +107,11 @@
       }, panicInterval);
 
       function chaseOkButton() {
+        const startTime = Date.now();
         const interval = setInterval(() => {
           const target = okButton.getBoundingClientRect();
 
+          // Snake movement toward the OK button
           if (x < target.left + target.width / 2) x += step;
           if (x > target.left + target.width / 2) x -= step;
           if (y < target.top + target.height / 2) y += step;
@@ -121,11 +125,27 @@
             y - (target.top + target.height / 2)
           );
 
-          if (distance < 20) {
+          const oneMinutePassed = Date.now() - startTime > ttime;
+
+          if (!oneMinutePassed && distance < 80) {
+            // Force dodge if snake gets too close
+            const maxX = window.innerWidth - 100;
+            const maxY = window.innerHeight - 50;
+            const randomLeft = Math.random() * maxX;
+            const randomTop = Math.random() * maxY;
+            okButton.style.left = randomLeft + 'px';
+            okButton.style.top = randomTop + 'px';
+
+            // Also reset snake's position a bit to prevent instant re-catch
+            x -= 30;
+            y -= 30;
+          }
+
+          // Allow catch after 1 minute
+          if (oneMinutePassed && distance < 20) {
             clearInterval(interval);
             okButton.style.display = 'none';
 
-            // Fade and shrink snake
             setTimeout(() => {
               snake.classList.add('fade-out');
               setTimeout(() => {
@@ -133,8 +153,9 @@
               }, 2000);
             }, 300);
           }
-        }, 20);
+        }, 30);
       }
+
     }
   </script>
 
