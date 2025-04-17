@@ -34,10 +34,19 @@
       height: 20px;
       background-color: red;
       position: absolute;
-      top: 0;
-      left: 0;
       border-radius: 4px;
       transition: all 0.1s linear;
+    }
+
+    .label {
+      position: absolute;
+      background: white;
+      color: black;
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 14px;
+      white-space: nowrap;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
     }
 
     .fade-out {
@@ -66,31 +75,67 @@
   <button id="ok-button">OK</button>
 
   <script>
-
     const okButton = document.getElementById('ok-button');
+    const snakeMessages = [
+      "small question...",
+      "could you check...",
+      "quick update...",
+      "it's urgent...",
+      "tiny thing...",
+      "real quick...",
+      "ping again...",
+      "ASAP...",
+      "help me...",
+      "it's sev1.."
+    ];
+
     let ttime = 30000;
+    let allSnakes = [];
 
     okButton.addEventListener('click', function () {
       const confirmed = confirm('Are you sure?');
       if (confirmed) {
         alert('You should click "OK" first');
-        startSnakeGame();
+        releaseNewSnake();
       }
     });
 
-    function startSnakeGame() {
+    function releaseNewSnake() {
+      const startX = 0;
+      const startY = 0;
+
+      // Create snake
       const snake = document.createElement('div');
       snake.className = 'snake';
+      snake.style.left = startX + 'px';
+      snake.style.top = startY + 'px';
       document.body.appendChild(snake);
 
-      let x = 0;
-      let y = 0;
-      const step = 3;
+      // Create label
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = snakeMessages[Math.floor(Math.random() * snakeMessages.length)];
+      label.style.left = startX + 25 + 'px';
+      label.style.top = startY - 10 + 'px';
+      document.body.appendChild(label);
 
-      // Panic mode: OK button tries to escape for 2 seconds
+      // Store snake info
+      allSnakes.push({
+        el: snake,
+        label: label,
+        x: startX,
+        y: startY
+      });
+
+      panicEscape(() => {
+        if (allSnakes.length === 1) startChasing(); // start chase only once
+      });
+    }
+
+    function panicEscape(callback) {
       const panicDuration = 1000;
       const panicInterval = 300;
-      let panicStart = Date.now();
+      const panicStart = Date.now();
 
       const moveOkRandomly = setInterval(() => {
         const maxX = window.innerWidth - 100;
@@ -102,63 +147,77 @@
 
         if (Date.now() - panicStart > panicDuration) {
           clearInterval(moveOkRandomly);
-          chaseOkButton();
+          callback();
         }
       }, panicInterval);
+    }
 
-      function chaseOkButton() {
-        const startTime = Date.now();
-        const interval = setInterval(() => {
-          const target = okButton.getBoundingClientRect();
+function startChasing() {
+  const step = 2;
+  const startTime = Date.now();
+  const endTime = startTime + ttime;
 
-          // Snake movement toward the OK button
-          if (x < target.left + target.width / 2) x += step;
-          if (x > target.left + target.width / 2) x -= step;
-          if (y < target.top + target.height / 2) y += step;
-          if (y > target.top + target.height / 2) y -= step;
+  // Countdown
+  const countdownInterval = setInterval(() => {
+    const secondsLeft = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+    okButton.textContent = `OK (${secondsLeft})`;
+    if (secondsLeft <= 0) {
+      clearInterval(countdownInterval);
+      okButton.textContent = "OK (0)";
+    }
+  }, 1000);
 
-          snake.style.left = x + 'px';
-          snake.style.top = y + 'px';
+  const interval = setInterval(() => {
+    const target = okButton.getBoundingClientRect();
+    const oneMinutePassed = Date.now() > endTime;
 
-          const distance = Math.hypot(
-            x - (target.left + target.width / 2),
-            y - (target.top + target.height / 2)
-          );
+    allSnakes.forEach((s) => {
+      const targetX = target.left + target.width / 2;
+      const targetY = target.top + target.height / 2;
 
-          const oneMinutePassed = Date.now() - startTime > ttime;
+      const dx = targetX - s.x;
+      const dy = targetY - s.y;
+      const distance = Math.hypot(dx, dy);
 
-          if (!oneMinutePassed && distance < 80) {
-            // Force dodge if snake gets too close
-            const maxX = window.innerWidth - 100;
-            const maxY = window.innerHeight - 50;
-            const randomLeft = Math.random() * maxX;
-            const randomTop = Math.random() * maxY;
-            okButton.style.left = randomLeft + 'px';
-            okButton.style.top = randomTop + 'px';
+      const dirX = dx / distance;
+      const dirY = dy / distance;
 
-            // Also reset snake's position a bit to prevent instant re-catch
-            x -= 30;
-            y -= 30;
-          }
+      s.x += dirX * step;
+      s.y += dirY * step;
 
-          // Allow catch after 1 minute
-          if (oneMinutePassed && distance < 20) {
-            clearInterval(interval);
-            okButton.style.display = 'none';
+      s.el.style.left = s.x + 'px';
+      s.el.style.top = s.y + 'px';
 
-            setTimeout(() => {
-              snake.classList.add('fade-out');
-              setTimeout(() => {
-                snake.remove();
-              }, 2000);
-            }, 300);
-          }
-        }, 30);
+      s.label.style.left = (s.x + 25) + 'px';
+      s.label.style.top = (s.y - 10) + 'px';
+
+      if (!oneMinutePassed && distance < 80) {
+        const maxX = window.innerWidth - 100;
+        const maxY = window.innerHeight - 50;
+        okButton.style.left = Math.random() * maxX + 'px';
+        okButton.style.top = Math.random() * maxY + 'px';
+
+        s.x -= dirX * 40;
+        s.y -= dirY * 40;
       }
 
-    }
+      if (oneMinutePassed && distance < 20) {
+        clearInterval(interval);
+        clearInterval(countdownInterval);
+        okButton.style.display = 'none';
+        setTimeout(() => {
+          allSnakes.forEach((s) => {
+            s.el.classList.add('fade-out');
+            s.label.remove();
+            setTimeout(() => s.el.remove(), 2000);
+          });
+        }, 300);
+      }
+    });
+  }, 30);
+}
+
   </script>
 
 </body>
 </html>
-
