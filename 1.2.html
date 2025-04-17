@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Snake Eats OK</title>
+  <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      background-color: #f0f0f0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      position: relative;
+    }
+
+    #ok-button {
+      padding: 20px 40px;
+      font-size: 24px;
+      background-color: green;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      transition: top 0.3s ease, left 0.3s ease;
+    }
+
+    .snake {
+      width: 20px;
+      height: 20px;
+      background-color: red;
+      position: absolute;
+      top: 0;
+      left: 0;
+      border-radius: 4px;
+      transition: all 0.1s linear;
+    }
+
+    .fade-out {
+      animation: fadeAndShrink 2s forwards;
+    }
+
+    @keyframes fadeAndShrink {
+      0% {
+        background-color: darkgreen;
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        background-color: limegreen;
+      }
+      100% {
+        background-color: transparent;
+        opacity: 0;
+        transform: scale(0.2);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <button id="ok-button">OK</button>
+
+  <script>
+    const okButton = document.getElementById('ok-button');
+
+    okButton.addEventListener('click', function () {
+      const confirmed = confirm('Are you sure?');
+      if (confirmed) {
+        alert('You should click Ok first');
+        startSnakeGame();
+      }
+    });
+
+    function startSnakeGame() {
+      const snake = document.createElement('div');
+      snake.className = 'snake';
+      document.body.appendChild(snake);
+
+      let x = 0;
+      let y = 0;
+      const step = 5;
+
+      // Panic mode: OK button tries to escape for 2 seconds
+      const panicDuration = 2000;
+      const panicInterval = 300;
+      let panicStart = Date.now();
+
+      const moveOkRandomly = setInterval(() => {
+        const maxX = window.innerWidth - 100;
+        const maxY = window.innerHeight - 50;
+        const randomLeft = Math.random() * maxX;
+        const randomTop = Math.random() * maxY;
+        okButton.style.left = randomLeft + 'px';
+        okButton.style.top = randomTop + 'px';
+
+        if (Date.now() - panicStart > panicDuration) {
+          clearInterval(moveOkRandomly);
+          chaseOkButton();
+        }
+      }, panicInterval);
+
+      function chaseOkButton() {
+        const interval = setInterval(() => {
+          const target = okButton.getBoundingClientRect();
+
+          if (x < target.left + target.width / 2) x += step;
+          if (x > target.left + target.width / 2) x -= step;
+          if (y < target.top + target.height / 2) y += step;
+          if (y > target.top + target.height / 2) y -= step;
+
+          snake.style.left = x + 'px';
+          snake.style.top = y + 'px';
+
+          const distance = Math.hypot(
+            x - (target.left + target.width / 2),
+            y - (target.top + target.height / 2)
+          );
+
+          if (distance < 20) {
+            clearInterval(interval);
+            okButton.style.display = 'none';
+
+            // Fade and shrink snake
+            setTimeout(() => {
+              snake.classList.add('fade-out');
+              setTimeout(() => {
+                snake.remove();
+              }, 2000);
+            }, 300);
+          }
+        }, 20);
+      }
+    }
+  </script>
+
+</body>
+</html>
+
