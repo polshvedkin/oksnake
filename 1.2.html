@@ -91,13 +91,17 @@
 
     let ttime = 30000;
     let allSnakes = [];
+    let firstClick = true;
 
     okButton.addEventListener('click', function () {
-      const confirmed = confirm('Are you sure?');
-      if (confirmed) {
-        alert('You should click "OK" first');
-        releaseNewSnake();
+      if (firstClick) {
+        const confirmed = confirm('Are you sure?');
+        if (confirmed) {
+          alert('You should click "OK" first');
+          firstClick = false;
+        }
       }
+      releaseNewSnake();
     });
 
     function releaseNewSnake() {
