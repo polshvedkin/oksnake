@@ -30,9 +30,9 @@
     }
 
     .snake {
-      width: 20px;
-      height: 20px;
-      background-color: red;
+      //width: 20px;
+      //height: 20px;
+      //background-color: red;
       position: absolute;
       border-radius: 4px;
       transition: all 0.1s linear;
@@ -86,12 +86,18 @@
       "ping again...",
       "ASAP...",
       "help me...",
-      "it's sev1.."
+      "it's sev1..",
+      "just one sec"
     ];
 
-    let ttime = 30000;
+    let ttime = 40000;
     let allSnakes = [];
     let firstClick = true;
+    var colour = ["red", "blue", "orange", "brown"];
+
+    function randomIntFromInterval(min, max) { // min and max included 
+      return Math.floor(Math.random() * (max - min + 1) + min);
+    }
 
     okButton.addEventListener('click', function () {
       if (firstClick) {
@@ -101,18 +107,31 @@
           firstClick = false;
         }
       }
-      releaseNewSnake();
+      releaseNewSnake(0,100 * randomIntFromInterval(1, 4),randomIntFromInterval(1, 4)-1, 20,20);
     });
 
-    function releaseNewSnake() {
-      const startX = 0;
-      const startY = 0;
+    okButton.addEventListener('auxclick', function(e) {
+      if (e.button == 1) {
+        releaseNewSnake(100 * randomIntFromInterval(1, 4),1000,randomIntFromInterval(1, 4)-1, 50,50);
+      }
+    })
+
+    okButton.addEventListener('dblclick', function(e) {
+        releaseNewSnake(1000 * randomIntFromInterval(1, 4),0,randomIntFromInterval(1, 4)-1, 80,80);
+    })
+
+    function releaseNewSnake(x,y,col, w,h) {
+      const startX = x;
+      const startY = y;
 
       // Create snake
       const snake = document.createElement('div');
       snake.className = 'snake';
       snake.style.left = startX + 'px';
       snake.style.top = startY + 'px';
+      snake.style.backgroundColor = colour[col];
+      snake.style.width = w + 'px';
+      snake.style.height = h + 'px';
       document.body.appendChild(snake);
 
       // Create label
@@ -205,7 +224,7 @@ function startChasing() {
         s.y -= dirY * 40;
       }
 
-      if (oneMinutePassed && distance < 20) {
+      if (oneMinutePassed /*&& distance < 20*/) {
         clearInterval(interval);
         clearInterval(countdownInterval);
         okButton.style.display = 'none';
