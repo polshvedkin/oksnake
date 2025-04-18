@@ -90,10 +90,13 @@
       "just one sec"
     ];
 
-    let ttime = 40000;
+    let ttime = 20000;
     let allSnakes = [];
     let firstClick = true;
-    var colour = ["red", "blue", "orange", "brown"];
+    var colour = ["red", "blue", "orange", "brown", "aqua"];
+    let i = 0;
+    let allReleased = 0;
+    let solvedCount = 0;
 
     function randomIntFromInterval(min, max) { // min and max included 
       return Math.floor(Math.random() * (max - min + 1) + min);
@@ -104,25 +107,40 @@
         const confirmed = confirm('Are you sure?');
         if (confirmed) {
           alert('You should click "OK" first');
+          alert('Try clicking mouse all ways....');
           firstClick = false;
         }
       }
-      releaseNewSnake(0,100 * randomIntFromInterval(1, 4),randomIntFromInterval(1, 4)-1, 20,20);
+      releaseNewSnake(0,100 * randomIntFromInterval(1, 4),randomIntFromInterval(1, 5)-1, 20,20);
     });
 
     okButton.addEventListener('auxclick', function(e) {
       if (e.button == 1) {
-        releaseNewSnake(100 * randomIntFromInterval(1, 4),1000,randomIntFromInterval(1, 4)-1, 50,50);
+        releaseNewSnake(100 * randomIntFromInterval(1, 4),1000,randomIntFromInterval(1, 5)-1, 50,50);
       }
     })
 
     okButton.addEventListener('dblclick', function(e) {
-        releaseNewSnake(1000 * randomIntFromInterval(1, 4),0,randomIntFromInterval(1, 4)-1, 80,80);
+        releaseNewSnake(1000 * randomIntFromInterval(1, 4),0,randomIntFromInterval(1, 5)-1, 80,80);
     })
+
+window.addEventListener('mousewheel', function(e){
+    wDelta = e.wheelDelta < 0 ? 'down' : 'up';
+    if (wDelta === 'up' && !firstClick) {
+      releaseNewSnake(100 * randomIntFromInterval(1, 4),1000,randomIntFromInterval(1, 5)-1, 10,10)
+    }
+    if (wDelta === 'down' && !firstClick) {
+      releaseNewSnake(1000 * randomIntFromInterval(1, 4),0,randomIntFromInterval(1, 5)-1, 10,10)
+    }
+    //console.log(wDelta);
+});
 
     function releaseNewSnake(x,y,col, w,h) {
       const startX = x;
       const startY = y;
+      allReleased++;
+      i++;
+      document.title = i + " Questions not solved";
 
       // Create snake
       const snake = document.createElement('div');
@@ -150,6 +168,18 @@
         y: startY
       });
 
+      // Add click-to-disappear behavior
+      snake.addEventListener('click', () => {
+        snake.classList.add('fade-out');
+        label.remove();
+        setTimeout(() => {
+          snake.remove();
+          allSnakes = allSnakes.filter(s => s.el !== snake);
+          document.title = (--i) + " Questions not solved";
+        }, 2000);
+        solvedCount++;
+      });
+
       panicEscape(() => {
         if (allSnakes.length === 1) startChasing(); // start chase only once
       });
@@ -175,10 +205,10 @@
       }, panicInterval);
     }
 
-function startChasing() {
+function startChasing(duration = ttime) {
   const step = 2;
   const startTime = Date.now();
-  const endTime = startTime + ttime;
+  const endTime = startTime + duration;
 
   // Countdown
   const countdownInterval = setInterval(() => {
@@ -223,20 +253,39 @@ function startChasing() {
         s.x -= dirX * 40;
         s.y -= dirY * 40;
       }
-
-      if (oneMinutePassed /*&& distance < 20*/) {
-        clearInterval(interval);
-        clearInterval(countdownInterval);
-        okButton.style.display = 'none';
-        setTimeout(() => {
-          allSnakes.forEach((s) => {
-            s.el.classList.add('fade-out');
-            s.label.remove();
-            setTimeout(() => s.el.remove(), 2000);
-          });
-        }, 300);
-      }
     });
+
+    if (oneMinutePassed) {
+      clearInterval(interval);
+      clearInterval(countdownInterval);
+
+      const continuePlaying = confirm("Time's up! Continue solving tasks?");
+      if (continuePlaying) {
+        startChasing(ttime); // Restart with a new duration
+      } else {
+        okButton.style.display = 'none';
+
+        allSnakes.forEach((s) => {
+          s.el.classList.add('fade-out');
+          s.label.remove();
+          setTimeout(() => s.el.remove(), 2000);
+        });
+
+        const finalMsg = document.createElement('div');
+        finalMsg.style.position = 'absolute';
+        finalMsg.style.top = '50%';
+        finalMsg.style.left = '50%';
+        finalMsg.style.transform = 'translate(-50%, -50%)';
+        finalMsg.style.fontSize = '32px';
+        finalMsg.style.color = 'black';
+        finalMsg.style.backgroundColor = 'white';
+        finalMsg.style.padding = '20px 40px';
+        finalMsg.style.borderRadius = '12px';
+        finalMsg.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
+        finalMsg.textContent = `All done – ${allReleased} released, ${solvedCount} solved`;
+        document.body.appendChild(finalMsg);
+      }
+    }
   }, 30);
 }
 
